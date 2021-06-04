@@ -15,6 +15,10 @@ public class ListPool<T>
 		return new List<T>();
 	}
 
+	/// <summary>
+	/// Adds the supplied list back into the availability pool
+	/// </summary>
+	/// <param name="list"></param>
 	public static void Add(List<T> list)
 	{
 		list.Clear();

@@ -6,6 +6,7 @@ using UnityEngine.EventSystems;
 public class HexGameUi : MonoBehaviour
 {
     public HexGrid grid;
+    HexUnit previousUnit;
     HexCell currentCell;
     HexUnit selectedUnit;
 
@@ -13,7 +14,7 @@ public class HexGameUi : MonoBehaviour
     {
         if (grid.HasPath)
         {
-            selectedUnit.Location = currentCell;
+            selectedUnit.Travel(grid.CurrentPath);
             grid.ClearPath();
         }
     }
@@ -30,6 +31,7 @@ public class HexGameUi : MonoBehaviour
             {
                 grid.ClearPath();
             }
+            selectedUnit.Location.EnableHighlight(Color.blue);
         }
     }
 
@@ -39,7 +41,13 @@ public class HexGameUi : MonoBehaviour
         UpdateCurrentCell();
         if (currentCell)
         {
+            previousUnit = selectedUnit;
+            if(previousUnit != null)
+            {
+                previousUnit.Location.DisableHighlight();
+            }
             selectedUnit = currentCell.Unit;
+            selectedUnit.Location.EnableHighlight(Color.blue);
         }
     }
 
@@ -52,13 +60,20 @@ public class HexGameUi : MonoBehaviour
 
     void Update()
     {
-        if (!EventSystem.current.IsPointerOverGameObject())
+        //I don't think my UI is set up correctly so I'm getting a bunch of
+        //false positives WRT IsPointerOverGameObject.  Doing direct raycast comparison
+        //for now.
+        HexCell cell = grid.GetCell(Camera.main.ScreenPointToRay(Input.mousePosition));
+        if (cell != null)
         {
-            if (Input.GetMouseButtonDown(0))
+            if (cell.Unit != null)
             {
-                DoSelection();
+                if (Input.GetMouseButtonDown(0))
+                {
+                    DoSelection();
+                }
             }
-            else if (selectedUnit)
+            if (selectedUnit)
             {
                 if (Input.GetMouseButtonDown(1))
                 {
@@ -70,6 +85,24 @@ public class HexGameUi : MonoBehaviour
                 }
             }
         }
+        //if (!EventSystem.current.IsPointerOverGameObject())
+        //{
+        //    if (Input.GetMouseButtonDown(0))
+        //    {
+        //        DoSelection();
+        //    }
+        //    else if (selectedUnit)
+        //    {
+        //        if (Input.GetMouseButtonDown(1))
+        //        {
+        //            DoMove();
+        //        }
+        //        else
+        //        {
+        //            DoPathfinding();
+        //        }
+        //    }
+        //}
     }
 
     bool UpdateCurrentCell()

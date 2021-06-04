@@ -21,6 +21,12 @@ public class HexGrid : MonoBehaviour
     HexCell[] cells;
     public Color[] colors;
     List<HexUnit> units = new List<HexUnit>();
+    Dictionary<HexCell, Dictionary<HexCell, List<HexCell>>> _paths = new Dictionary<HexCell, Dictionary<HexCell, List<HexCell>>>();
+    List<HexCell> _previousPath = new List<HexCell>();
+    public List<HexCell> CurrentPath
+    {
+        get => _previousPath;
+    }
 
     public bool HasPath
     {
@@ -221,11 +227,10 @@ public class HexGrid : MonoBehaviour
         AddCellToChunk(x, z, cell);
     }
 
-    Dictionary<HexCell, Dictionary<HexCell, List<HexCell>>> _paths = new Dictionary<HexCell, Dictionary<HexCell, List<HexCell>>>();
-    List<HexCell> _previousPath = new List<HexCell>();
     public void FindPath(HexCell origin, HexCell destination, int movementAllowance)
     {
         ClearPath(_previousPath);
+        ListPool<HexCell>.Add(_previousPath);
         if (_paths.ContainsKey(origin) && _paths[origin].ContainsKey(destination))
         {
             HighlightPath(_paths[origin][destination], movementAllowance);
@@ -292,7 +297,7 @@ public class HexGrid : MonoBehaviour
             }
             seen.Add(current);
 
-            int currentTurn = current.Distance / movementAllowance;
+            int currentTurn = (current.Distance - 1) / movementAllowance;
             for (HexDirection direction = HexDirection.NE; direction <= HexDirection.NW; direction++)
             {
                 HexCell neighbor = current.GetNeighbor(direction);
@@ -310,7 +315,7 @@ public class HexGrid : MonoBehaviour
                 }
 
                 int distance = current.Distance + movementCost;
-                int turn = distance / movementAllowance;
+                int turn = (distance - 1) / movementAllowance;
                 if (turn > currentTurn)
                 {
                     distance = turn * movementAllowance + movementCost;
@@ -337,7 +342,7 @@ public class HexGrid : MonoBehaviour
         if (found)
         {
             //build a path where path[0] = dest and path[n] = origin
-            List<HexCell> path = new List<HexCell>();
+            List<HexCell> path = ListPool<HexCell>.Get();
             HexCell current = destination;
             while (current != origin)
             {
@@ -345,7 +350,7 @@ public class HexGrid : MonoBehaviour
                 current = current.PathFrom;
             }
             path.Add(current);
-
+            path.Reverse();
             return path;
         }
         return new List<HexCell>();
@@ -372,13 +377,13 @@ public class HexGrid : MonoBehaviour
         }
 
         //handle destination
-        HexCell current = path[0];
-        int turn = current.Distance / movementAllowance;
+        HexCell current = path[path.Count - 1];
+        int turn = (current.Distance - 1) / movementAllowance;
         current.SetLabel(turn.ToString());
         current.EnableHighlight(Color.red);
 
         //handle origin
-        current = path[path.Count - 1];
+        current = path[0];
         turn = 0;
         current.SetLabel(turn.ToString());
         current.EnableHighlight(Color.blue);
@@ -387,12 +392,10 @@ public class HexGrid : MonoBehaviour
         for (int i = path.Count - 2; i > 0; i--)
         {
             current = path[i];
-            turn = current.Distance / movementAllowance;
+            turn = (current.Distance - 1) / movementAllowance;
             current.SetLabel(turn.ToString());
             current.EnableHighlight(Color.white);
         }
-
-
     }
 
     void AddCellToChunk(int x, int z, HexCell cell)
