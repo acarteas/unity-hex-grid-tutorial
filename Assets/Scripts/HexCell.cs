@@ -41,6 +41,7 @@ public class HexCell : MonoBehaviour, IComparable<HexCell>
     HexDirection incomingRiver, outgoingRiver;
     int specialIndex;
 
+    public HexCellShaderData ShaderData { get; set; }
     public HexUnit Unit { get; set; }
     public int SearchHeuristic { get; set; }
     public HexCell PathFrom { get; set; }
@@ -49,6 +50,7 @@ public class HexCell : MonoBehaviour, IComparable<HexCell>
     [SerializeField]
     bool[] roads;
 
+    public int Index { get; set; }
     public int SearchPriority
     {
         get
@@ -347,6 +349,7 @@ public class HexCell : MonoBehaviour, IComparable<HexCell>
     public void Load(BinaryReader reader)
     {
         terrainTypeIndex = reader.ReadByte();
+        ShaderData.RefreshTerrain(this);
         elevation = reader.ReadByte();
         RefreshPosition();
         waterLevel = reader.ReadByte();
@@ -511,7 +514,7 @@ public class HexCell : MonoBehaviour, IComparable<HexCell>
             if (terrainTypeIndex != value)
             {
                 terrainTypeIndex = value;
-                Refresh();
+                ShaderData.RefreshTerrain(this);
             }
         }
     }

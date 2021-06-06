@@ -1,3 +1,4 @@
+
 Shader "Custom/Terrain"
 {
     Properties
@@ -22,6 +23,7 @@ Shader "Custom/Terrain"
 
         #pragma multi_compile _ GRID_ON
 
+        #include "HexCellData.cginc"
 
         UNITY_DECLARE_TEX2DARRAY(_MainTex);
 
@@ -33,7 +35,14 @@ Shader "Custom/Terrain"
 
         void vert(inout appdata_full v, out Input data) {
             UNITY_INITIALIZE_OUTPUT(Input, data);
-            data.terrain = v.texcoord2.xyz;
+
+            float4 cell0 = GetCellData(v, 0);
+            float4 cell1 = GetCellData(v, 1);
+            float4 cell2 = GetCellData(v, 2);
+
+            data.terrain.x = cell0.w;
+            data.terrain.y = cell1.w;
+            data.terrain.z = cell2.w;
         }
 
         float4 GetTerrainColor(Input IN, int index) {
