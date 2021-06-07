@@ -148,6 +148,7 @@ public class HexGrid : MonoBehaviour
     public void AddUnit(HexUnit unit, HexCell location, float orientation)
     {
         units.Add(unit);
+        unit.Grid = this;
         unit.transform.SetParent(transform, false);
         unit.Location = location;
         unit.Orientation = orientation;
@@ -282,7 +283,6 @@ public class HexGrid : MonoBehaviour
         }
     }
 
-    //TODO: fix so that it's not dependent on max value for determining if previously visited
     List<HexCell> Search(HexCell origin, HexCell destination, int movementAllowance)
     {
         bool found = false;
@@ -339,8 +339,6 @@ public class HexGrid : MonoBehaviour
                     found = true;
                     break;
                 }
-
-                queue.Enqueue(neighbor);
             }
         }
 
@@ -359,7 +357,70 @@ public class HexGrid : MonoBehaviour
             path.Reverse();
             return path;
         }
-        return new List<HexCell>();
+        return ListPool<HexCell>.Get();
+    }
+
+    public void IncreaseVisibility(HexCell fromCell, int range)
+    {
+        List<HexCell> cells = GetVisibleCells(fromCell, range);
+        for (int i = 0; i < cells.Count; i++)
+        {
+            cells[i].IncreaseVisibility();
+        }
+        ListPool<HexCell>.Add(cells);
+    }
+
+    public void DecreaseVisibility(HexCell fromCell, int range)
+    {
+        List<HexCell> cells = GetVisibleCells(fromCell, range);
+        for (int i = 0; i < cells.Count; i++)
+        {
+            cells[i].DecreaseVisibility();
+        }
+        ListPool<HexCell>.Add(cells);
+    }
+
+    List<HexCell> GetVisibleCells(HexCell origin, int range)
+    {
+        HashSet<HexCell> seen = new HashSet<HexCell>();
+        PriortyQueue<HexCell> queue = new PriortyQueue<HexCell>();
+        queue.Enqueue(origin);
+        origin.Distance = 0;
+        origin.SearchSeed = SearchCounter;
+        origin.SearchHeuristic = 0;
+        while (queue.Count > 0)
+        {
+            var current = queue.Dequeue();
+
+            //skip previously seen cells
+            if (seen.Contains(current))
+            {
+                continue;
+            }
+            seen.Add(current);
+            for (HexDirection direction = HexDirection.NE; direction <= HexDirection.NW; direction++)
+            {
+                HexCell neighbor = current.GetNeighbor(direction);
+
+                //skip visited nodes
+                if (neighbor == null || neighbor.SearchSeed == current.SearchSeed)
+                {
+                    continue;
+                }
+
+                int distance = current.Distance + 1;
+                if(distance < range)
+                {
+                    neighbor.SearchHeuristic = 0;
+                    neighbor.SearchSeed = current.SearchSeed;
+                    neighbor.Distance = distance;
+                    neighbor.PathFrom = current;
+                    queue.Enqueue(neighbor);
+                }
+            }
+        }
+
+        return seen.ToList();
     }
 
     void RememberPath(HexCell origin, HexCell destination, List<HexCell> path)
