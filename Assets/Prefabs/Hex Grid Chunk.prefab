@@ -154,7 +154,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   useCollider: 0
-  useCellData: 0
+  useCellData: 1
   useUVCoordinates: 1
   useUV2Coordinates: 0
   useTerrainTypes: 0
@@ -451,7 +451,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   useCollider: 0
-  useCellData: 0
+  useCellData: 1
   useUVCoordinates: 1
   useUV2Coordinates: 0
   useTerrainTypes: 0
@@ -649,7 +649,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   useCollider: 0
-  useCellData: 0
+  useCellData: 1
   useUVCoordinates: 1
   useUV2Coordinates: 0
   useTerrainTypes: 0
@@ -748,7 +748,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   useCollider: 0
-  useCellData: 0
+  useCellData: 1
   useUVCoordinates: 0
   useUV2Coordinates: 0
   useTerrainTypes: 0
@@ -812,7 +812,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: a5750ac40192f8c429f3369062895e79, type: 2}
+  - {fileID: 2100000, guid: c818c68b4b8d49e44a9864a3f9fc8cb7, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -847,7 +847,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   useCollider: 0
-  useCellData: 0
+  useCellData: 1
   useUVCoordinates: 1
   useUV2Coordinates: 1
   useTerrainTypes: 0
