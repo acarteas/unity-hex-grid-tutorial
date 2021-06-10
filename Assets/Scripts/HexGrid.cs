@@ -234,22 +234,22 @@ public class HexGrid : MonoBehaviour
         AddCellToChunk(x, z, cell);
     }
 
-    public void FindPath(HexCell origin, HexCell destination, int movementAllowance)
+    public void FindPath(HexCell origin, HexCell destination, HexUnit unit)
     {
         ClearPath(_previousPath);
         ListPool<HexCell>.Add(_previousPath);
         if (_paths.ContainsKey(origin) && _paths[origin].ContainsKey(destination))
         {
-            HighlightPath(_paths[origin][destination], movementAllowance);
+            //HighlightPath(_paths[origin][destination], unit);
         }
         else
         {
-            _previousPath = Search(origin, destination, movementAllowance);
+            _previousPath = Search(origin, destination, unit);
 
             //turned off for now
             //RememberPath(origin, destination, _previousPath);
         }
-        HighlightPath(_previousPath, movementAllowance);
+        HighlightPath(_previousPath, unit.Speed);
     }
 
     public void ClearPath()
@@ -283,7 +283,7 @@ public class HexGrid : MonoBehaviour
         }
     }
 
-    List<HexCell> Search(HexCell origin, HexCell destination, int movementAllowance)
+    List<HexCell> Search(HexCell origin, HexCell destination, HexUnit unit)
     {
         bool found = false;
 
@@ -303,7 +303,7 @@ public class HexGrid : MonoBehaviour
             }
             seen.Add(current);
 
-            int currentTurn = (current.Distance - 1) / movementAllowance;
+            int currentTurn = (current.Distance - 1) / unit.Speed;
             for (HexDirection direction = HexDirection.NE; direction <= HexDirection.NW; direction++)
             {
                 HexCell neighbor = current.GetNeighbor(direction);
@@ -314,17 +314,21 @@ public class HexGrid : MonoBehaviour
                     continue;
                 }
 
-                int movementCost = current.CalculateMovementCost(neighbor, direction);
+                if (!unit.IsValidDestination(neighbor))
+                {
+                    continue;
+                }
+                int movementCost = unit.GetMoveCost(current, neighbor, direction);
                 if (movementCost < 0)
                 {
                     continue;
                 }
 
                 int distance = current.Distance + movementCost;
-                int turn = (distance - 1) / movementAllowance;
+                int turn = (distance - 1) / unit.Speed;
                 if (turn > currentTurn)
                 {
-                    distance = turn * movementAllowance + movementCost;
+                    distance = turn * unit.Speed + movementCost;
                 }
 
                 neighbor.SearchSeed = current.SearchSeed;
