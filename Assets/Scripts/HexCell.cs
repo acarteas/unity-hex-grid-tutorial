@@ -41,6 +41,7 @@ public class HexCell : MonoBehaviour, IComparable<HexCell>
     HexDirection incomingRiver, outgoingRiver;
     int specialIndex;
 
+    public bool IsExplored { get; private set; }
     public HexCellShaderData ShaderData { get; set; }
     public HexUnit Unit { get; set; }
     public int SearchHeuristic { get; set; }
@@ -237,6 +238,7 @@ public class HexCell : MonoBehaviour, IComparable<HexCell>
         visibility += 1;
         if (visibility == 1)
         {
+            IsExplored = true;
             ShaderData.RefreshVisibility(this);
         }
     }
@@ -372,9 +374,10 @@ public class HexCell : MonoBehaviour, IComparable<HexCell>
             }
         }
         writer.Write((byte)roadFlags);
+        writer.Write(IsExplored);
     }
 
-    public void Load(BinaryReader reader)
+    public void Load(BinaryReader reader, int header)
     {
         terrainTypeIndex = reader.ReadByte();
         ShaderData.RefreshTerrain(this);
@@ -414,6 +417,8 @@ public class HexCell : MonoBehaviour, IComparable<HexCell>
         {
             roads[i] = (roadFlags & (1 << i)) != 0;
         }
+        IsExplored = header >= 3 ? reader.ReadBoolean() : false;
+        ShaderData.RefreshVisibility(this);
     }
 
     void RefreshPosition()

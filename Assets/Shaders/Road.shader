@@ -19,6 +19,7 @@ Shader "Custom/Road"
 			CGPROGRAM
 			// Physically based Standard lighting model, and enable shadows on all light types
 			#pragma surface surf Standard fullforwardshadows decal:blend vertex:vert
+			#pragma multi_compile _ HEX_MAP_EDIT_MODE
 
 			// Use shader model 3.0 target, to get nicer looking lighting
 			#pragma target 3.0

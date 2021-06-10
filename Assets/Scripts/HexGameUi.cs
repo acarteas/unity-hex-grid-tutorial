@@ -56,6 +56,14 @@ public class HexGameUi : MonoBehaviour
         grid.ClearPath();
         enabled = !toggle;
         grid.ShowUI(!toggle);
+        if (toggle)
+        {
+            Shader.EnableKeyword("HEX_MAP_EDIT_MODE");
+        }
+        else
+        {
+            Shader.DisableKeyword("HEX_MAP_EDIT_MODE");
+        }
     }
 
     void Update()
