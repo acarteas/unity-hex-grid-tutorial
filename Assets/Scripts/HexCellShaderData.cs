@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class HexCellShaderData : MonoBehaviour
@@ -5,7 +6,13 @@ public class HexCellShaderData : MonoBehaviour
 
 	Texture2D cellTexture;
 	Color32[] cellTextureData;
-	
+	public bool ImmediateMode { get; set; }
+	public HexGrid Grid { get; set; }
+	List<HexCell> transitioningCells = new List<HexCell>();
+	const float transitionSpeed = 255f;
+	bool needsVisibilityReset;
+
+
 	public void Initialize(int x, int z)
 	{
 		if (cellTexture)
@@ -37,6 +44,7 @@ public class HexCellShaderData : MonoBehaviour
 				cellTextureData[i] = new Color32(0, 0, 0, 0);
 			}
 		}
+		transitioningCells.Clear();
 		enabled = true;
 	}
 
@@ -49,15 +57,89 @@ public class HexCellShaderData : MonoBehaviour
 	public void RefreshVisibility(HexCell cell)
 	{
 		int index = cell.Index;
-		cellTextureData[index].r = cell.IsVisible ? (byte)255 : (byte)0;
-		cellTextureData[index].g = cell.IsExplored ? (byte)255 : (byte)0;
+		if (ImmediateMode)
+		{
+			cellTextureData[index].r = cell.IsVisible ? (byte)255 : (byte)0;
+			cellTextureData[index].g = cell.IsExplored ? (byte)255 : (byte)0;
+		}
+		else if (cellTextureData[index].b != 255)
+		{
+			cellTextureData[index].b = 255;
+			transitioningCells.Add(cell);
+		}
 		enabled = true;
 	}
 
 	void LateUpdate()
 	{
+		if (needsVisibilityReset)
+		{
+			needsVisibilityReset = false;
+			Grid.ResetVisibility();
+		}
+		int delta = (int)(Time.deltaTime * transitionSpeed);
+		if (delta == 0)
+		{
+			delta = 1;
+		}
+		for (int i = 0; i < transitioningCells.Count; i++)
+		{
+			if (!UpdateCellData(transitioningCells[i], delta))
+			{
+				transitioningCells[i] =
+					transitioningCells[transitioningCells.Count - 1];
+				transitioningCells.RemoveAt(transitioningCells.Count - 1);
+				
+				//decrement to go over swapped element at i
+				i--;
+			}
+		}
 		cellTexture.SetPixels32(cellTextureData);
 		cellTexture.Apply();
-		enabled = false;
+		enabled = transitioningCells.Count > 0;
+	}
+
+	bool UpdateCellData(HexCell cell, int delta)
+	{
+		int index = cell.Index;
+		Color32 data = cellTextureData[index];
+		bool stillUpdating = false;
+
+		if (cell.IsExplored && data.g < 255)
+		{
+			stillUpdating = true;
+			int t = data.g + delta;
+			data.g = (byte)t;
+			data.g = t >= 255 ? (byte)255 : (byte)t;
+		}
+
+		if (cell.IsVisible)
+		{
+			if (data.r < 255)
+			{
+				stillUpdating = true;
+				int t = data.r + delta;
+				data.r = t >= 255 ? (byte)255 : (byte)t;
+			}
+		}
+		else if (data.r > 0)
+		{
+			stillUpdating = true;
+			int t = data.r - delta;
+			data.r = t < 0 ? (byte)0 : (byte)t;
+		}
+
+		if (!stillUpdating)
+		{
+			data.b = 0;
+		}
+		cellTextureData[index] = data;
+		return stillUpdating;
+	}
+
+	public void ViewElevationChanged()
+	{
+		needsVisibilityReset = true;
+		enabled = true;
 	}
 }

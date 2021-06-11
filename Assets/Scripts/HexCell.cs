@@ -40,8 +40,26 @@ public class HexCell : MonoBehaviour, IComparable<HexCell>
     bool hasIncomingRiver, hasOutgoingRiver;
     HexDirection incomingRiver, outgoingRiver;
     int specialIndex;
+    bool explored;
 
-    public bool IsExplored { get; private set; }
+    public int ViewElevation
+    {
+        get
+        {
+            return elevation >= waterLevel ? elevation : waterLevel;
+        }
+    }
+    public bool IsExplored 
+    {
+        get
+        {
+            return explored && CanBeExplored;
+        }
+        private set
+        {
+            explored = value;
+        }
+    }
     public HexCellShaderData ShaderData { get; set; }
     public HexUnit Unit { get; set; }
     public int SearchHeuristic { get; set; }
@@ -75,7 +93,7 @@ public class HexCell : MonoBehaviour, IComparable<HexCell>
             }
         }
     }
-
+    public bool CanBeExplored { get; set; }
     public int FarmLevel
     {
         get
@@ -207,7 +225,12 @@ public class HexCell : MonoBehaviour, IComparable<HexCell>
             {
                 return;
             }
+            int originalViewElevation = ViewElevation;
             waterLevel = value;
+            if (ViewElevation != originalViewElevation)
+            {
+                ShaderData.ViewElevationChanged();
+            }
             ValidateRivers();
             Refresh();
         }
@@ -227,7 +250,7 @@ public class HexCell : MonoBehaviour, IComparable<HexCell>
     {
         get
         {
-            return visibility > 0;
+            return visibility > 0 && CanBeExplored;
         }
     }
 
@@ -282,6 +305,15 @@ public class HexCell : MonoBehaviour, IComparable<HexCell>
                 }
             }
             return false;
+        }
+    }
+
+    public void ResetVisibility()
+    {
+        if (visibility > 0)
+        {
+            visibility = 0;
+            ShaderData.RefreshVisibility(this);
         }
     }
 
@@ -559,7 +591,16 @@ public class HexCell : MonoBehaviour, IComparable<HexCell>
         }
         set
         {
+            if (elevation == value)
+            {
+                return;
+            }
+            int originalViewElevation = ViewElevation;
             elevation = value;
+            if (ViewElevation != originalViewElevation)
+            {
+                ShaderData.ViewElevationChanged();
+            }
             RefreshPosition();
             ValidateRivers();
         }
