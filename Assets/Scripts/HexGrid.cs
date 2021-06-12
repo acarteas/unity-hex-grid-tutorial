@@ -60,6 +60,15 @@ public class HexGrid : MonoBehaviour
         }
     }
 
+    public HexCell GetCell(int xOffset, int zOffset)
+    {
+        return cells[xOffset + zOffset * cellCountX];
+    }
+
+    public HexCell GetCell(int cellIndex)
+    {
+        return cells[cellIndex];
+    }
 
     void ClearUnits()
     {
