@@ -106,7 +106,6 @@ public class PriortyQueue<T> where T : IComparable<T>
                 if (right_child_index < end_location)
                 {
                     //CASE 2 is FALSE (CASE 3 is true)
-                    //TODO: find value of smallest index
                     smallest_index = (_comparer.Compare(_items[left_child_index], _items[right_child_index]) < 0)
                         ? left_child_index
                         : right_child_index;
@@ -130,6 +129,11 @@ public class PriortyQueue<T> where T : IComparable<T>
                 break;
             }
         }
+    }
+
+    public void Clear()
+    {
+        _items.Clear();
     }
 
     public void Enqueue(T item)
