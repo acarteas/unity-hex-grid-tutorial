@@ -362,8 +362,8 @@ MonoBehaviour:
   m_FillRect: {fileID: 235335828}
   m_HandleRect: {fileID: 1246580945}
   m_Direction: 0
-  m_MinValue: 0
-  m_MaxValue: 6
+  m_MinValue: -2
+  m_MaxValue: 8
   m_WholeNumbers: 1
   m_Value: 0
   m_OnValueChanged:
@@ -12779,7 +12779,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 700f695e78d9174459f2486f75016544, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  chunkSizeMin: 30
+  chunkSizeMax: 100
+  elevationMinimum: -2
+  elevationMaximum: 8
   grid: {fileID: 1864147674}
+  highRiseProbability: 0.25
+  jitterProbability: 0.25
+  landPercentage: 50
+  sinkProbability: 0.2
+  waterLevel: 3
 --- !u!4 &1623504821
 Transform:
   m_ObjectHideFlags: 0
@@ -14330,7 +14339,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1812638035
 RectTransform:
   m_ObjectHideFlags: 0
