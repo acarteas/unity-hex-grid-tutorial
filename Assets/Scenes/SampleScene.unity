@@ -12787,7 +12787,9 @@ MonoBehaviour:
   highRiseProbability: 0.25
   jitterProbability: 0.25
   landPercentage: 50
+  seed: 0
   sinkProbability: 0.2
+  useFixedSeed: 1
   waterLevel: 3
 --- !u!4 &1623504821
 Transform:
