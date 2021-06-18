@@ -15,6 +15,9 @@ public class HexMapGenerator : MonoBehaviour
     [Range(6, 10)]
     public int elevationMaximum = 8;
 
+    [Range(0, 100)]
+    public int erosionPercentage = 50;
+
     public HexGrid grid;
 
     [Range(0f, 1f)]
@@ -34,6 +37,9 @@ public class HexMapGenerator : MonoBehaviour
 
     [Range(0, 10)]
     public int regionBorder = 5;
+
+    [Range(1, 4)]
+    public int regionCount = 1;
 
     public int seed;
 
@@ -99,28 +105,88 @@ public class HexMapGenerator : MonoBehaviour
         }
 
         MapRegion region;
-        if (Random.value < 0.5f)
+        switch (regionCount)
         {
-            region.xMin = mapBorderX;
-            region.xMax = grid.cellCountX / 2 - regionBorder;
-            region.zMin = mapBorderZ;
-            region.zMax = grid.cellCountZ - mapBorderZ;
-            regions.Add(region);
-            region.xMin = grid.cellCountX / 2 + regionBorder;
-            region.xMax = grid.cellCountX - mapBorderX;
-            regions.Add(region);
+            case 1:
+            default:
+                region.xMin = mapBorderX;
+                region.xMax = grid.cellCountX - mapBorderX;
+                region.zMin = mapBorderZ;
+                region.zMax = grid.cellCountZ - mapBorderZ;
+                regions.Add(region);
+                break;
+
+            case 2:
+                if (Random.value < 0.5f)
+                {
+                    region.xMin = mapBorderX;
+                    region.xMax = grid.cellCountX / 2 - regionBorder;
+                    region.zMin = mapBorderZ;
+                    region.zMax = grid.cellCountZ - mapBorderZ;
+                    regions.Add(region);
+                    region.xMin = grid.cellCountX / 2 + regionBorder;
+                    region.xMax = grid.cellCountX - mapBorderX;
+                    regions.Add(region);
+                }
+                else
+                {
+                    region.xMin = mapBorderX;
+                    region.xMax = grid.cellCountX - mapBorderX;
+                    region.zMin = mapBorderZ;
+                    region.zMax = grid.cellCountZ / 2 - regionBorder;
+                    regions.Add(region);
+                    region.zMin = grid.cellCountZ / 2 + regionBorder;
+                    region.zMax = grid.cellCountZ - mapBorderZ;
+                    regions.Add(region);
+                }
+                break;
+            case 3:
+                region.xMin = mapBorderX;
+                region.xMax = grid.cellCountX / 3 - regionBorder;
+                region.zMin = mapBorderZ;
+                region.zMax = grid.cellCountZ - mapBorderZ;
+                regions.Add(region);
+                region.xMin = grid.cellCountX / 3 + regionBorder;
+                region.xMax = grid.cellCountX * 2 / 3 - regionBorder;
+                regions.Add(region);
+                region.xMin = grid.cellCountX * 2 / 3 + regionBorder;
+                region.xMax = grid.cellCountX - mapBorderX;
+                regions.Add(region);
+                break;
+            case 4:
+                region.xMin = mapBorderX;
+                region.xMax = grid.cellCountX / 2 - regionBorder;
+                region.zMin = mapBorderZ;
+                region.zMax = grid.cellCountZ / 2 - regionBorder;
+                regions.Add(region);
+                region.xMin = grid.cellCountX / 2 + regionBorder;
+                region.xMax = grid.cellCountX - mapBorderX;
+                regions.Add(region);
+                region.zMin = grid.cellCountZ / 2 + regionBorder;
+                region.zMax = grid.cellCountZ - mapBorderZ;
+                regions.Add(region);
+                region.xMin = mapBorderX;
+                region.xMax = grid.cellCountX / 2 - regionBorder;
+                regions.Add(region);
+                break;
         }
-        else
+    }
+
+    void ErodeLand()
+    {
+        List<HexCell> erodableCells = ListPool<HexCell>.Get();
+        for(int i = 0; i < cellCount; i++)
         {
-            region.xMin = mapBorderX;
-            region.xMax = grid.cellCountX - mapBorderX;
-            region.zMin = mapBorderZ;
-            region.zMax = grid.cellCountZ / 2 - regionBorder;
-            regions.Add(region);
-            region.zMin = grid.cellCountZ / 2 + regionBorder;
-            region.zMax = grid.cellCountZ - mapBorderZ;
-            regions.Add(region);
+            var cell = grid.GetCell(i);
+            if(IsErodible(cell) == true)
+            {
+                erodableCells.Add(cell);
+            }
         }
+
+        int targetErodibleCount = (int)(erodibleCells.Count * (100 - erosionPercentage) * 0.01f);
+
+        ListPool<HexCell>.Add(erodableCells);
     }
 
     public void GenerateMap(int x, int z)
@@ -149,6 +215,7 @@ public class HexMapGenerator : MonoBehaviour
         }
         CreateRegions();
         CreateLand();
+        ErodeLand();
         SetTerrainType();
 
         for (int i = 0; i < cellCount; i++)
@@ -163,6 +230,21 @@ public class HexMapGenerator : MonoBehaviour
     {
         return grid.GetCell(Random.Range(region.xMin, region.xMax), Random.Range(region.zMin, region.zMax));
     }
+
+    bool IsErodible(HexCell cell)
+    {
+        int erodibleElevation = cell.Elevation - 2;
+        for (HexDirection d = HexDirection.NE; d <= HexDirection.NW; d++)
+        {
+            HexCell neighbor = cell.GetNeighbor(d);
+            if (neighbor && neighbor.Elevation <= erodibleElevation)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
 
     int RaiseTerrain(int chunkSize, int budget, MapRegion region)
     {
