@@ -21,6 +21,9 @@ public class HexMapGenerator : MonoBehaviour
     [Range(0f, 1f)]
     public float evaporationFactor = 0.5f;
 
+    [Range(0f, 1f)]
+    public float extraLakeProbability = 0.25f;
+
     public HexGrid grid;
 
     [Range(0f, 1f)]
@@ -86,6 +89,7 @@ public class HexMapGenerator : MonoBehaviour
 
     List<ClimateData> climate = new List<ClimateData>();
     List<ClimateData> nextClimate = new List<ClimateData>();
+    List<HexDirection> flowDirections = new List<HexDirection>();
     List<MapRegion> regions;
     int cellCount, landCells;
     PriortyQueue<HexCell> searchFrontier = new PriortyQueue<HexCell>();
@@ -230,7 +234,89 @@ public class HexMapGenerator : MonoBehaviour
 
     int CreateRiver(HexCell origin)
     {
-        int length = 0;
+        int length = 1;
+        HexCell cell = origin;
+        HexDirection direction = HexDirection.NE;
+        while (!cell.IsUnderwater)
+        {
+            int minNeighborElevation = int.MaxValue;
+            flowDirections.Clear();
+            for (HexDirection d = HexDirection.NE; d <= HexDirection.NW; d++)
+            {
+                HexCell neighbor = cell.GetNeighbor(d);
+                if (!neighbor)
+                {
+                    continue;
+                }
+
+                if (neighbor.Elevation < minNeighborElevation)
+                {
+                    minNeighborElevation = neighbor.Elevation;
+                }
+
+                if (neighbor == origin || neighbor.HasIncomingRiver)
+                {
+                    continue;
+                }
+
+                int delta = neighbor.Elevation - cell.Elevation;
+                if (delta > 0)
+                {
+                    continue;
+                }
+
+                if (neighbor.HasOutgoingRiver)
+                {
+                    cell.SetOutgoingRiver(d);
+                    return length;
+                }
+
+                if (delta < 0)
+                {
+                    flowDirections.Add(d);
+                    flowDirections.Add(d);
+                    flowDirections.Add(d);
+                }
+
+                if (
+                    length == 1 ||
+                    (d != direction.Next2() && d != direction.Previous2())
+                )
+                {
+                    flowDirections.Add(d);
+                }
+
+                flowDirections.Add(d);
+            }
+
+            if (flowDirections.Count == 0)
+            {
+                if (length == 1)
+                {
+                    return 0;
+                }
+
+                if (minNeighborElevation >= cell.Elevation && Random.value < extraLakeProbability)
+                {
+                    cell.WaterLevel = minNeighborElevation;
+                    if (minNeighborElevation == cell.Elevation)
+                    {
+                        cell.Elevation = minNeighborElevation - 1;
+                    }
+                }
+                break;
+            }
+
+            direction = flowDirections[Random.Range(0, flowDirections.Count)];
+            cell.SetOutgoingRiver(direction);
+            length += 1;
+            if (minNeighborElevation >= cell.Elevation)
+            {
+                cell.WaterLevel = cell.Elevation;
+                cell.Elevation -= 1;
+            }
+            cell = cell.GetNeighbor(direction);
+        }
         return length;
     }
 
@@ -273,7 +359,20 @@ public class HexMapGenerator : MonoBehaviour
 
             if (!origin.HasRiver)
             {
-                riverBudget -= CreateRiver(origin);
+                bool isValidOrigin = true;
+                for (HexDirection d = HexDirection.NE; d <= HexDirection.NW; d++)
+                {
+                    HexCell neighbor = origin.GetNeighbor(d);
+                    if (neighbor && (neighbor.HasRiver || neighbor.IsUnderwater))
+                    {
+                        isValidOrigin = false;
+                        break;
+                    }
+                }
+                if (isValidOrigin)
+                {
+                    riverBudget -= CreateRiver(origin);
+                }
             }
         }
 
