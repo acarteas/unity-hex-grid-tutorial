@@ -592,7 +592,7 @@ public class HexMapGenerator : MonoBehaviour
         climate[cellIndex] = new ClimateData();
     }
 
-    public void GenerateMap(int x, int z)
+    public void GenerateMap(int x, int z, bool wrapping)
     {
         Random.State originalRandomState = Random.state;
         if (!useFixedSeed)
@@ -611,7 +611,7 @@ public class HexMapGenerator : MonoBehaviour
             searchFrontier = new PriortyQueue<HexCell>();
         }
 
-        grid.CreateMap(x, z);
+        grid.CreateMap(x, z, wrapping);
         for (int i = 0; i < cellCount; i++)
         {
             grid.GetCell(i).WaterLevel = waterLevel;

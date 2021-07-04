@@ -11,6 +11,7 @@ public class HexGrid : MonoBehaviour
     public int cellCountX = 20, cellCountZ = 15;
     public int seed;
     int chunkCountX, chunkCountZ;
+    bool wrapping = true;
 
     public HexCell cellPrefab;
     public Text cellLabelPrefab;
@@ -45,7 +46,7 @@ public class HexGrid : MonoBehaviour
         HexUnit.unitPrefab = unitPrefab;
         cellShaderData = gameObject.AddComponent<HexCellShaderData>();
         cellShaderData.Grid = this;
-        CreateMap(cellCountX, cellCountZ);
+        CreateMap(cellCountX, cellCountZ, this.wrapping);
     }
     public void ResetVisibility()
     {
@@ -79,7 +80,7 @@ public class HexGrid : MonoBehaviour
         units.Clear();
     }
 
-    public bool CreateMap(int x, int z)
+    public bool CreateMap(int x, int z, bool wrapping)
     {
         if (
             x <= 0 || x % HexMetrics.chunkSizeX != 0 ||
@@ -92,6 +93,7 @@ public class HexGrid : MonoBehaviour
         ClearUnits();
         cellCountX = x;
         cellCountZ = z;
+        this.wrapping = wrapping;
         if (chunks != null)
         {
             for (int i = 0; i < chunks.Length; i++)
@@ -135,7 +137,7 @@ public class HexGrid : MonoBehaviour
         }
         if (x != cellCountX || z != cellCountZ)
         {
-            if (!CreateMap(x, z))
+            if (!CreateMap(x, z, wrapping))
             {
                 return;
             }
