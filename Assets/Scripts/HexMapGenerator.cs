@@ -47,6 +47,9 @@ public class HexMapGenerator : MonoBehaviour
     [Range(1, 4)]
     public int regionCount = 1;
 
+    [Range(0, 20)]
+    public int riverPercentage = 10;
+
     [Range(0f, 1f)]
     public float runoffFactor = 0.25f;
 
@@ -84,7 +87,7 @@ public class HexMapGenerator : MonoBehaviour
     List<ClimateData> climate = new List<ClimateData>();
     List<ClimateData> nextClimate = new List<ClimateData>();
     List<MapRegion> regions;
-    int cellCount;
+    int cellCount, landCells;
     PriortyQueue<HexCell> searchFrontier = new PriortyQueue<HexCell>();
     int searchFrontierPhase;
 
@@ -116,7 +119,7 @@ public class HexMapGenerator : MonoBehaviour
     void CreateLand()
     {
         int landBudget = Mathf.RoundToInt(cellCount * landPercentage * 0.01f);
-
+        landCells = landBudget;
         for (int guard = 0; guard < 10000; guard++)
         {
             bool sink = Random.value < sinkProbability;
@@ -141,6 +144,7 @@ public class HexMapGenerator : MonoBehaviour
 
         if (landBudget > 0)
         {
+            landCells -= landBudget;
             Debug.LogWarning("Failed to use up " + landBudget + " land budget.");
         }
     }
@@ -224,6 +228,12 @@ public class HexMapGenerator : MonoBehaviour
         }
     }
 
+    int CreateRiver(HexCell origin)
+    {
+        int length = 0;
+        return length;
+    }
+
     void CreateRivers()
     {
         List<HexCell> riverOrigins = ListPool<HexCell>.Get();
@@ -251,6 +261,25 @@ public class HexMapGenerator : MonoBehaviour
             {
                 riverOrigins.Add(cell);
             }
+        }
+        int riverBudget = Mathf.RoundToInt(landCells * riverPercentage * 0.01f);
+        while (riverBudget > 0 && riverOrigins.Count > 0)
+        {
+            int index = Random.Range(0, riverOrigins.Count);
+            int lastIndex = riverOrigins.Count - 1;
+            HexCell origin = riverOrigins[index];
+            riverOrigins[index] = riverOrigins[lastIndex];
+            riverOrigins.RemoveAt(lastIndex);
+
+            if (!origin.HasRiver)
+            {
+                riverBudget -= CreateRiver(origin);
+            }
+        }
+
+        if (riverBudget > 0)
+        {
+            Debug.LogWarning("Failed to use up river budget.");
         }
 
         ListPool<HexCell>.Add(riverOrigins);
