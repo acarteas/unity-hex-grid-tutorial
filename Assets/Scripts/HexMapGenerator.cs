@@ -174,19 +174,67 @@ public class HexMapGenerator : MonoBehaviour
 
     void ErodeLand()
     {
-        List<HexCell> erodableCells = ListPool<HexCell>.Get();
+        List<HexCell> erodibleCells = ListPool<HexCell>.Get();
         for(int i = 0; i < cellCount; i++)
         {
             var cell = grid.GetCell(i);
             if(IsErodible(cell) == true)
             {
-                erodableCells.Add(cell);
+                erodibleCells.Add(cell);
             }
         }
 
         int targetErodibleCount = (int)(erodibleCells.Count * (100 - erosionPercentage) * 0.01f);
 
-        ListPool<HexCell>.Add(erodableCells);
+        while (erodibleCells.Count > targetErodibleCount)
+        {
+            int index = Random.Range(0, erodibleCells.Count);
+            HexCell cell = erodibleCells[index]; 
+            HexCell targetCell = GetErosionTarget(cell);
+
+            cell.Elevation -= 1;
+            targetCell.Elevation += 1;
+            if (!IsErodible(cell))
+            {
+                erodibleCells[index] = erodibleCells[erodibleCells.Count - 1];
+                erodibleCells.RemoveAt(erodibleCells.Count - 1);
+            }
+
+            //check neighbors to see if they've been erodible
+            for (HexDirection d = HexDirection.NE; d <= HexDirection.NW; d++)
+            {
+                HexCell neighbor = cell.GetNeighbor(d);
+                if (
+                    neighbor && neighbor.Elevation == cell.Elevation + 2 &&
+                    !erodibleCells.Contains(neighbor)
+                )
+                {
+                    erodibleCells.Add(neighbor);
+                }
+            }
+
+            if (IsErodible(targetCell) && !erodibleCells.Contains(targetCell))
+            {
+                erodibleCells.Add(targetCell);
+            }
+
+            //after raising neighbor, check to see if it is no longer erodible
+            for (HexDirection d = HexDirection.NE; d <= HexDirection.NW; d++)
+            {
+                HexCell neighbor = targetCell.GetNeighbor(d);
+                if (
+                    neighbor && 
+                    neighbor != cell && 
+                    !IsErodible(neighbor) &&
+                    neighbor.Elevation == targetCell.Elevation + 1
+                )
+                {
+                    erodibleCells.Remove(neighbor);
+                }
+            }
+        }
+
+        ListPool<HexCell>.Add(erodibleCells);
     }
 
     public void GenerateMap(int x, int z)
@@ -224,6 +272,23 @@ public class HexMapGenerator : MonoBehaviour
         }
         Random.state = originalRandomState;
 
+    }
+
+    HexCell GetErosionTarget(HexCell cell)
+    {
+        List<HexCell> candidates = ListPool<HexCell>.Get();
+        int erodibleElevation = cell.Elevation - 2;
+        for (HexDirection d = HexDirection.NE; d <= HexDirection.NW; d++)
+        {
+            HexCell neighbor = cell.GetNeighbor(d);
+            if (neighbor && neighbor.Elevation <= erodibleElevation)
+            {
+                candidates.Add(neighbor);
+            }
+        }
+        HexCell target = candidates[Random.Range(0, candidates.Count)];
+        ListPool<HexCell>.Add(candidates);
+        return target;
     }
 
     HexCell GetRandomCell(MapRegion region)
