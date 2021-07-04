@@ -489,6 +489,11 @@ public class HexCell : MonoBehaviour, IComparable<HexCell>
         );
     }
 
+    public void SetMapData(float data)
+    {
+        ShaderData.SetMapData(this, data);
+    }
+
     void SetRoad(int index, bool state)
     {
         roads[index] = state;
