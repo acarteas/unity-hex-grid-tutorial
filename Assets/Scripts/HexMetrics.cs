@@ -39,6 +39,8 @@ public static class HexMetrics
     public const float wallYOffset = -1f;
     public const float wallThickness = 0.75f;
     public const float wallElevationOffset = verticalTerraceStepSize;
+    public static int wrapSize;
+    public const float innerDiameter = innerRadius * 2f;
 
     static HexHash[] hashGrid;
 
@@ -47,6 +49,14 @@ public static class HexMetrics
         new float[] {0.0f, 0.4f, 0.6f},
         new float[] {0.4f, 0.6f, 0.8f}
     };
+
+    public static bool Wrapping
+    {
+        get
+        {
+            return wrapSize > 0;
+        }
+    }
 
     public static float[] GetFeatureThresholds(int level)
     {

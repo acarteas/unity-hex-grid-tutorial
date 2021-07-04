@@ -11,7 +11,9 @@ public class HexGrid : MonoBehaviour
     public int cellCountX = 20, cellCountZ = 15;
     public int seed;
     int chunkCountX, chunkCountZ;
-    bool wrapping = true;
+    public bool wrapping = true;
+    Transform[] columns = new Transform[0];
+    int currentCenterColumnIndex = -1;
 
     public HexCell cellPrefab;
     public Text cellLabelPrefab;
@@ -71,6 +73,40 @@ public class HexGrid : MonoBehaviour
         return cells[cellIndex];
     }
 
+    public void CenterMap(float xPosition)
+    {
+        int centerColumnIndex = (int)
+            (xPosition / (HexMetrics.innerDiameter * HexMetrics.chunkSizeX));
+
+        if (centerColumnIndex == currentCenterColumnIndex)
+        {
+            return;
+        }
+        currentCenterColumnIndex = centerColumnIndex;
+        int minColumnIndex = centerColumnIndex - chunkCountX / 2;
+        int maxColumnIndex = centerColumnIndex + chunkCountX / 2;
+        Vector3 position;
+        position.y = position.z = 0f;
+        for (int i = 0; i < columns.Length; i++)
+        {
+            if (i < minColumnIndex)
+            {
+                position.x = chunkCountX *
+                    (HexMetrics.innerDiameter * HexMetrics.chunkSizeX);
+            }
+            else if (i > maxColumnIndex)
+            {
+                position.x = chunkCountX *
+                    -(HexMetrics.innerDiameter * HexMetrics.chunkSizeX);
+            }
+            else
+            {
+                position.x = 0f;
+            }
+            columns[i].localPosition = position;
+        }
+    }
+
     void ClearUnits()
     {
         for (int i = 0; i < units.Count; i++)
@@ -94,11 +130,13 @@ public class HexGrid : MonoBehaviour
         cellCountX = x;
         cellCountZ = z;
         this.wrapping = wrapping;
-        if (chunks != null)
+        currentCenterColumnIndex = -1;
+        HexMetrics.wrapSize = wrapping ? cellCountX : 0;
+        if (columns != null)
         {
-            for (int i = 0; i < chunks.Length; i++)
+            for (int i = 0; i < columns.Length; i++)
             {
-                Destroy(chunks[i].gameObject);
+                Destroy(columns[i].gameObject);
             }
         }
 
@@ -113,6 +151,7 @@ public class HexGrid : MonoBehaviour
     {
         writer.Write(cellCountX);
         writer.Write(cellCountZ);
+        writer.Write(wrapping);
         for (int i = 0; i < cells.Length; i++)
         {
             cells[i].Save(writer);
@@ -135,7 +174,8 @@ public class HexGrid : MonoBehaviour
             x = reader.ReadInt32();
             z = reader.ReadInt32();
         }
-        if (x != cellCountX || z != cellCountZ)
+        bool wrapping = header >= 5 ? reader.ReadBoolean() : false;
+        if (x != cellCountX || z != cellCountZ || this.wrapping != wrapping)
         {
             if (!CreateMap(x, z, wrapping))
             {
@@ -192,6 +232,13 @@ public class HexGrid : MonoBehaviour
 
     void CreateChunks()
     {
+        columns = new Transform[chunkCountX];
+        for (int x = 0; x < chunkCountX; x++)
+        {
+            columns[x] = new GameObject("Column").transform;
+            columns[x].SetParent(transform, false);
+        }
+
         chunks = new HexGridChunk[chunkCountX * chunkCountZ];
 
         for (int z = 0, i = 0; z < chunkCountZ; z++)
@@ -199,7 +246,7 @@ public class HexGrid : MonoBehaviour
             for (int x = 0; x < chunkCountX; x++)
             {
                 HexGridChunk chunk = chunks[i++] = Instantiate(chunkPrefab);
-                chunk.transform.SetParent(transform);
+                chunk.transform.SetParent(columns[x], false);
             }
         }
     }
@@ -220,7 +267,7 @@ public class HexGrid : MonoBehaviour
     void CreateCell(int x, int z, int i)
     {
         Vector3 position;
-        position.x = (x + z * 0.5f - z / 2) * (HexMetrics.innerRadius * 2f);
+        position.x = (x + z * 0.5f - z / 2) * HexMetrics.innerDiameter;
         position.y = 0f;
         position.z = z * (HexMetrics.outerRadius * 1.5f);
 
@@ -535,6 +582,7 @@ public class HexGrid : MonoBehaviour
             HexMetrics.noiseSource = NoiseSource;
             HexMetrics.InitializeHashGrid(seed);
             HexUnit.unitPrefab = unitPrefab;
+            HexMetrics.wrapSize = wrapping ? cellCountX : 0;
             ResetVisibility();
         }
     }
