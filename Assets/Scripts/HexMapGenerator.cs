@@ -224,6 +224,38 @@ public class HexMapGenerator : MonoBehaviour
         }
     }
 
+    void CreateRivers()
+    {
+        List<HexCell> riverOrigins = ListPool<HexCell>.Get();
+        for (int i = 0; i < cellCount; i++)
+        {
+            HexCell cell = grid.GetCell(i);
+            if (cell.IsUnderwater)
+            {
+                continue;
+            }
+            ClimateData data = climate[i];
+            float weight =
+                data.moisture * (cell.Elevation - waterLevel) /
+                (elevationMaximum - waterLevel);
+            if (weight > 0.75f)
+            {
+                riverOrigins.Add(cell);
+                riverOrigins.Add(cell);
+            }
+            if (weight > 0.5f)
+            {
+                riverOrigins.Add(cell);
+            }
+            if (weight > 0.25f)
+            {
+                riverOrigins.Add(cell);
+            }
+        }
+
+        ListPool<HexCell>.Add(riverOrigins);
+    }
+
     void ErodeLand()
     {
         List<HexCell> erodibleCells = ListPool<HexCell>.Get();
@@ -391,6 +423,7 @@ public class HexMapGenerator : MonoBehaviour
         CreateLand();
         ErodeLand();
         CreateClimate();
+        CreateRivers();
         SetTerrainType();
 
         for (int i = 0; i < cellCount; i++)
@@ -514,7 +547,6 @@ public class HexMapGenerator : MonoBehaviour
             {
                 cell.TerrainTypeIndex = 2;
             }
-            cell.SetMapData(moisture);
         }
     }
 
