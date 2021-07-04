@@ -133,7 +133,7 @@ public class HexCell : MonoBehaviour, IComparable<HexCell>
         }
     }
 
-
+    public int ColumnIndex { get; set; }
 
     public int PlantLevel
     {
