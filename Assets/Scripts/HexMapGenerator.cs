@@ -106,12 +106,14 @@ public class HexMapGenerator : MonoBehaviour
         }
     }
 
-    static Biome[] biomes = {
+    static Biome[] _biomes = {
         new Biome(0, 0), new Biome(4, 0), new Biome(4, 0), new Biome(4, 0),
         new Biome(0, 0), new Biome(2, 0), new Biome(2, 1), new Biome(2, 2),
         new Biome(0, 0), new Biome(1, 0), new Biome(1, 1), new Biome(1, 2),
         new Biome(0, 0), new Biome(1, 1), new Biome(1, 2), new Biome(1, 3)
     };
+
+    static Biome[] Biomes { get { return _biomes;  } }
 
     struct ClimateData
     {
@@ -376,7 +378,9 @@ public class HexMapGenerator : MonoBehaviour
         for (int i = 0; i < cellCount; i++)
         {
             HexCell cell = grid.GetCell(i);
-            if (cell.IsUnderwater)
+
+            //rivers must always start in snow
+            if (cell.IsUnderwater || cell.TerrainTypeIndex != (int)TerrainType.Snow)
             {
                 continue;
             }
@@ -533,16 +537,19 @@ public class HexMapGenerator : MonoBehaviour
 
         if (cell.IsUnderwater)
         {
+            //water is always fully saturated with clouds
             cellClimate.moisture = 1f;
             cellClimate.clouds += evaporationFactor;
         }
         else
         {
+            //have some of the land moisture evaporate into the air
             float evaporation = cellClimate.moisture * evaporationFactor;
             cellClimate.moisture -= evaporation;
             cellClimate.clouds += evaporation;
         }
 
+        //some of the clouds fall back down onto the land
         float precipitation = cellClimate.clouds * precipitationFactor;
         cellClimate.clouds -= precipitation;
         cellClimate.moisture += precipitation;
@@ -550,6 +557,7 @@ public class HexMapGenerator : MonoBehaviour
         float cloudMaximum = 1f - cell.ViewElevation / (elevationMaximum + 1f);
         if (cellClimate.clouds > cloudMaximum)
         {
+            //any excess cloud moisture goes back down onto the ground
             cellClimate.moisture += cellClimate.clouds - cloudMaximum;
             cellClimate.clouds = cloudMaximum;
         }
@@ -575,6 +583,7 @@ public class HexMapGenerator : MonoBehaviour
                 neighborClimate.clouds += cloudDispersal;
             }
 
+            //land-based water wants to run downhill.  
             int elevationDelta = neighbor.ViewElevation - cell.ViewElevation;
             if (elevationDelta < 0)
             {
@@ -583,6 +592,7 @@ public class HexMapGenerator : MonoBehaviour
             }
             else if (elevationDelta == 0)
             {
+                //tiles on the same level send some water to its neighbors
                 cellClimate.moisture -= seepage;
                 neighborClimate.moisture += seepage;
             }
@@ -628,8 +638,8 @@ public class HexMapGenerator : MonoBehaviour
         CreateLand();
         ErodeLand();
         CreateClimate();
-        CreateRivers();
         SetTerrainType();
+        CreateRivers();
 
         for (int i = 0; i < cellCount; i++)
         {
@@ -751,7 +761,7 @@ public class HexMapGenerator : MonoBehaviour
                         break;
                     }
                 }
-                Biome cellBiome = biomes[t * 4 + m];
+                Biome cellBiome = Biomes[t * 4 + m];
                 if (cellBiome.terrain == 0)
                 {
                     if (cell.Elevation >= rockDesertElevation)

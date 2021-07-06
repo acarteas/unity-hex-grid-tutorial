@@ -7,7 +7,7 @@ public enum HexEdgeType
     Flat, Slope, Cliff
 }
 
-public enum TerrainType { Grass = 1 }
+public enum TerrainType { Sand = 0, Grass, Stone, Dirt, Snow, }
 
 public static class HexMetrics
 {
