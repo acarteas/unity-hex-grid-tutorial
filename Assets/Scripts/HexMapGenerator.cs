@@ -301,6 +301,7 @@ public class HexMapGenerator : MonoBehaviour
                     continue;
                 }
 
+                //track minimum elevation of all neighbors
                 if (neighbor.Elevation < minNeighborElevation)
                 {
                     minNeighborElevation = neighbor.Elevation;
@@ -312,6 +313,8 @@ public class HexMapGenerator : MonoBehaviour
                 }
 
                 int delta = neighbor.Elevation - cell.Elevation;
+
+                //rivers cannot flow uphill
                 if (delta > 0)
                 {
                     continue;
@@ -323,6 +326,7 @@ public class HexMapGenerator : MonoBehaviour
                     return length;
                 }
 
+                //if the neighbor is below water, favor that tile
                 if (delta < 0)
                 {
                     flowDirections.Add(d);
@@ -330,6 +334,7 @@ public class HexMapGenerator : MonoBehaviour
                     flowDirections.Add(d);
                 }
 
+                //favor straight or gradual turns
                 if (
                     length == 1 ||
                     (d != direction.Next2() && d != direction.Previous2())
@@ -341,28 +346,27 @@ public class HexMapGenerator : MonoBehaviour
                 flowDirections.Add(d);
             }
 
+            //did we run out of places to go?
             if (flowDirections.Count == 0)
             {
+                //do not create single-lenght rivers
                 if (length == 1)
                 {
                     return 0;
                 }
 
-                if (minNeighborElevation >= cell.Elevation && Random.value < extraLakeProbability)
-                {
-                    cell.WaterLevel = minNeighborElevation;
-                    if (minNeighborElevation == cell.Elevation)
-                    {
-                        cell.Elevation = minNeighborElevation - 1;
-                    }
-                }
+                //rivers that don't reach the sea always terminate in a lake
+                cell.Elevation = minNeighborElevation - 1;
+                cell.WaterLevel = cell.Elevation + 1;
                 break;
             }
 
             direction = flowDirections[Random.Range(0, flowDirections.Count)];
             cell.SetOutgoingRiver(direction);
             length += 1;
-            if (minNeighborElevation >= cell.Elevation)
+
+            //create random lakes along the way
+            if (minNeighborElevation >= cell.Elevation && Random.value < extraLakeProbability)
             {
                 cell.WaterLevel = cell.Elevation;
                 cell.Elevation -= 1;
@@ -385,9 +389,13 @@ public class HexMapGenerator : MonoBehaviour
                 continue;
             }
             ClimateData data = climate[i];
+
+            //probability of river is based on moisture level of cell and elevation relative
+            //to the water level
             float weight =
                 data.moisture * (cell.Elevation - waterLevel) /
                 (elevationMaximum - waterLevel);
+            cell.SetMapData(weight);
             if (weight > 0.75f)
             {
                 riverOrigins.Add(cell);
@@ -413,6 +421,7 @@ public class HexMapGenerator : MonoBehaviour
 
             if (!origin.HasRiver)
             {
+                //avoid adjacent tiles that are next to water or next to a river
                 bool isValidOrigin = true;
                 for (HexDirection d = HexDirection.NE; d <= HexDirection.NW; d++)
                 {
